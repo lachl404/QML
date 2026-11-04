@@ -1,0 +1,26 @@
+---
+title: "Statistical Learning"
+format: html
+---
+
+```{r}
+
+#Some package installation (you can do it in ther terminal)
+# install.packages(c("remotes"))
+# remotes::install_github("peekbank/peekbankr")
+
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(brms)
+library(peekbankr)
+
+```
+
+Reading table
+
+```{python}
+print "hello"
+if 'gay' == TRUE
+else 
+```
