@@ -1,0 +1,100 @@
+---
+title: "week5workshop taskb"
+format: 
+  html: default
+  pdf: default
+---
+
+# Shallow Morphological Parsing (RT)
+
+We want to include only data from `L2` `critical` trials.
+
+## Libraries
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(brms)
+```
+
+## Summary measures:
+
+First group by the columns we want then we can filter them.
+
+```{r}
+shallow <- read_csv("./data/song2020/shallow.csv")
+
+#tibble
+
+shallow |>
+  group_by(Group, Critical_Filler) |>
+  summarise(
+    mean = mean(RT, na.rm = TRUE),
+    sd = sd(RT, na.rm = TRUE)
+  ) |>
+  filter(
+    Group == "L2",
+    Critical_Filler == "Critical"
+  )
+
+#df
+
+shallow_l2_critical <- shallow |>
+  filter(
+    Group == "L2",
+    Critical_Filler == "Critical"
+  )
+```
+
+> The mean reaction time of critical L2 participants is 967.75ms and the standard deviation is approximately 354.06ms.
+
+## Plot
+
+```{r}
+
+shallow |>
+  filter(
+    Group == "L2", 
+    Critical_Filler == "Critical"
+  ) |>
+  ggplot(
+    aes(x = RT)) +
+  geom_density() +
+  labs(
+    x = "Reaction Time (ms)",
+    y = "Density"
+  )
+  
+```
+
+## Model
+
+We create the model with the mean and sd values we calculated:
+
+```{r}
+rt_brm <- brm(
+  formula = RT ~ 1,
+  family = gaussian,
+  data = shallow_l2_critical
+)
+```
+
+```{r}
+summary(rt_brm)
+```
+
+quartiles
+
+```{r}
+quartiles <- qnorm(
+  c(0.25, 0.5, 0.75), 967.72, 354.30)
+
+quartiles[3] - quartiles[1]
+```
+
+The IQR is 477.9434. This means that 50% of the density mass lies within approximately 729ms and 1207ms.
+
+```{r}
+plot(rt_brm, combo = c("dens", "trace"))
+```

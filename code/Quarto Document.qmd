@@ -1,0 +1,15 @@
+---
+title: "First Quarto Document"
+author: "Lachlan"
+format: html
+---
+
+## 
+
+The above is the YAML header that can be as long or as short as you want. It is begins and ends with three "---". Similarly, below, code chunks begin and end with three "\`\`\`".
+
+```{r}
+#| label: setup
+
+
+```

@@ -1,0 +1,50 @@
+---
+title: "Week5 Workshop task c"
+format: html
+---
+
+# Reading Fixation Time (Eye-tracking)
+
+## Libraries
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(brms)
+```
+
+```{r}
+fix_dur <- read.csv("./data/berzak2025/fix-dur.csv")
+
+#fixayion durations
+fix_dur |>
+  summarise(
+    mean = mean(CURRENT_FIX_DURATION, na.rm = TRUE),
+    sd = sd(CURRENT_FIX_DURATION, na.rm = TRUE)) 
+
+```
+
+```{r}
+fix_dur |>
+  ggplot(
+    aes(x = CURRENT_FIX_DURATION)) +
+      geom_density() +
+      labs(
+        x = "Fixation Durantion (ms)",
+        y = "Density"
+      )
+
+```
+
+```{r}
+fixdr_brm <- brm(
+  formula = CURRENT_FIX_DURATION ~ 1,
+  family = gaussian,
+  data = fix_dur
+)
+```
+
+```{r}
+summary(fixdr_brm)
+```

@@ -1,0 +1,278 @@
+---
+title: "week 6"
+format: 
+  html: default
+  pdf: default
+---
+
+# Intro to Regression
+
+Rgression models, including Gaussian regression are models based on thr equation of a straight line. They allow you to model the relationship between to or more variables.
+
+A regression model is a statistical model that estimates the relationship between an outcome variable and one or more predictor variables (more on outcome/predictor below). Regression models are based on the **equation of a straight line**.
+
+𝑦=𝑚⁢𝑥+𝑐
+
+An alternative notation of the equation is:
+
+𝑦=𝛽0+𝛽1⁢𝑥
+
+𝛽 is the Greek letter beta \[ˈbiːtə\]: you can read 𝛽0 as “beta zero” and 𝛽1 “beta one”. In this formula, 𝛽0 corresponds to 𝑐 and 𝛽1 to 𝑚 in the first notation. We will use the second notation (with 𝛽0 and 𝛽1) in this book, since using 𝛽’s with subscript indexes will help understand the process of extracting information from regression models later.^[1](https://stefanocoretta.github.io/qdal/ch-regression-intro.html#fn1)^
+
+You might remember from school when you were asked to find the values of 𝑦 given certain values of 𝑥 and specific values of 𝛽0 and 𝛽1. For example, you were given the following formula (the dot ⋅ stands for multiplication; it can be dropped so 2 ⋅𝑥 and 2⁢𝑥 are equivalent):
+
+𝑦=3+2⋅𝑥
+
+and the values 𝑥 =(2,4,5,8,10,23,36). The homework was to calculate the values of 𝑦 and maybe plot them on a Cartesian coordinate space.
+
+```{r}
+library(tidyverse)
+
+line <- tibble(
+  x = c(2, 4, 5, 8, 10, 23, 36),
+  y = 3 + 2 * x
+)
+
+ggplot(line, aes(x, y)) +
+  geom_point(size = 4) +
+  geom_line(colour = "red") +
+  labs(title = bquote(italic(y) == 3 + 2 * italic(x)))
+```
+
+Using the provided formula, we are able to find the values of 𝑦. Note that in 𝑦 =3 +2 ∗𝑥, 𝛽0 =3 and 𝛽1 =2. Importantly, 𝛽0 is the value of 𝑦 when 𝑥 =0. 𝛽0 is commonly called the **intercept** of the line. The intercept is the value where the line crosses the *y*-axis (the value where the line “intercepts” the *y*-axis).
+
+𝑦=3+2⁢𝑥=3+2⋅0=3
+
+And 𝛽1 is the number to add to the intercept for each **unit increase of** 𝑥. 𝛽1 is commonly called the **slope** of the line.^[2](https://stefanocoretta.github.io/qdal/ch-regression-intro.html#fn2)^ [Figure 23.1](https://stefanocoretta.github.io/qdal/ch-regression-intro.html#fig-unit-increase) should clarify this. The dashed line indicates the increase in 𝑦 for every unit increase of 𝑥 (i.e., every time 𝑥 increases by 1, 𝑦 increases by 2).
+
+```{r}
+line <- tibble(
+  x = 0:3,
+  y = 3 + 2 * x
+)
+
+ggplot(line, aes(x, y)) +
+  geom_point(size = 4) +
+  geom_line(colour = "red") +
+  annotate("path", x = c(0, 0, 1), y = c(3, 5, 5), linetype = "dashed") +
+  annotate("path", x = c(1, 1, 2), y = c(5, 7, 7), linetype = "dashed") +
+  annotate("path", x = c(2, 2, 3), y = c(7, 9, 9), linetype = "dashed") +
+  annotate("text", x = 0.25, y = 4.25, label = "+2") +
+  annotate("text", x = 1.25, y = 6.25, label = "+2") +
+  annotate("text", x = 2.25, y = 8.25, label = "+2") +
+  scale_y_continuous(breaks = 0:15) +
+  labs(title = bquote(italic(y) == 3 + 2 * italic(x)))
+```
+
+Of course, we can plug in any value of 𝑥 in the formula to obtain 𝑦. The following equations show 𝑦 when 𝑥 is 1, 2, and 3. You see that when you go from 𝑥 =1 to 𝑥 =2 we go from 𝑦 =5 to 𝑦 =7: 7 −5 =2, our slope 𝛽1.
+
+𝑦=3+2⋅1=3+2=5𝑦=3+2⋅2=3+4=7𝑦=3+2⋅3=3+6=9
+
+Now, in the context of research, you usually start with a sample of measures (values) of 𝑥 (the predictor variable) and 𝑦 (the outcome variable) and you want to find the intercept and the slope, rather than having to calculate 𝑦 from a known intercept and slope. In other words, you want to **estimate** (i.e. to find the values of) 𝛽0 and 𝛽1 of the model formula 𝑦 =𝛽0 +𝛽1⁢𝑥 . This is what regression models are for: given the sampled values of 𝑦 and 𝑥, the model estimates 𝛽0 and 𝛽1.
+
+# Error
+
+Measurements are **noisy**: they usually contain errors. Error can have many different causes (for example, measurement error due to technical limitations or variability in human behaviour), but we are usually not that interested in learning about what causes the error. Rather, we just want our model to be able to deal with error. Let’s see what errors looks like. [Figure 23.2](https://stefanocoretta.github.io/qdal/ch-regression-intro.html#fig-error) shows values of 𝑦 simulated with the equation 𝑦 =1 +1.5⁢𝑥 (with 𝑥 equal 1 to 10), to which the random error 𝜖 (noted with the Greek letter epsilon \[ˈɛpsɪlɒn\]) was added. Due to the added error, the points are almost on the straight line defined by 𝑦 =1 +1.5⁢𝑥, but not quite. The vertical distance between the observed points and the expected line, called the **regression line**, is the **residual error** (red lines in the plot).
+
+```{r}
+set.seed(4321)
+x <- 1:10
+y <- (1 + 1.5 * x) + rnorm(10, 0, 2)
+
+line <- tibble(
+  x = x,
+  y = y
+)
+
+m <- lm(y ~ x)
+yhat <- m$fitted.values
+diff <- y - yhat
+ggplot(line, aes(x, y)) +
+  geom_segment(aes(x = x, xend = x, y = y, yend = yhat), colour = "red") +
+  geom_point(size = 4) +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(title = bquote(italic(y) == 1 + 1.5 * italic(x) + epsilon))
+```
+
+When taking into account error, the equation of a regression model becomes the following:
+
+𝑦=𝛽0+𝛽1⁢𝑥+𝜖
+
+where 𝜖 is the error. In other words, 𝑦 is the sum of 𝛽0, 𝛽1⁢𝑥 and some error. In regression modelling, the error 𝜖 is assumed to come from a Gaussian distribution with mean 0 and standard deviation 𝜎 when 𝑦 is assumed to be generated by a Gaussian distribution: 𝜖 ∼𝐺⁡𝑎⁢𝑢⁢𝑠⁢𝑠⁢𝑖⁢𝑎⁢𝑛⁡(𝜇 =0,𝜎). We can substitute 𝜖 for the distribution.
+
+𝑦=𝛽0+𝛽1⁢𝑥+𝐺⁡𝑎⁢𝑢⁢𝑠⁢𝑠⁢𝑖⁢𝑎⁢𝑛⁡(0,𝜎)
+
+Furthermore, this equation can be rewritten like so (since the mean of the Gaussian error is 0):
+
+𝑦∼𝐺⁡𝑎⁢𝑢⁢𝑠⁢𝑠⁢𝑖⁢𝑎⁢𝑛⁡(𝜇,𝜎)𝜇=𝛽0+𝛽1⁢𝑥
+
+You can read those formulae like so: “The variable 𝑦 is distributed according to a Gaussian distribution with mean 𝜇 and standard deviation 𝜎. The mean 𝜇 is equal to the intercept 𝛽0 plus the slope 𝛽1 times the variable 𝑥.” This is a Gaussian regression model, because the assumed family of the outcome 𝑦 is Gaussian. Now, the goal of a (Gaussian) regression model is to estimate 𝛽0, 𝛽1 and 𝜎 from the data (i.e. from the values of 𝑥 and 𝑦). In other words, regression models find the regression line based on the observations of 𝑦 and 𝑥. We do not know what is the true regression line that has generated 𝑦 and 𝑥, we just have 𝑦 and 𝑥 values.
+
+The 𝑦 ∼𝐺⁡𝑎⁢𝑢⁢𝑠⁢𝑠⁢𝑖⁢𝑎⁢𝑛⁡(𝜇,𝜎) line in the formulae above is exactly the formula you saw in [Chapter 21](https://stefanocoretta.github.io/qdal/ch-gauss-model.html). It is no coincidence: this is *Gaussian* regression model. The outcome variable 𝑦 is assumed to be Gaussian. The new building block we have added now is that 𝜇 depends on 𝑥: this is because 𝑥 appears in the formula of 𝜇. In other words, we are allowing the mean 𝜇 to vary with 𝑥. This is expressed by the so-called **regression equation** (also linear equation): 𝜇 =𝛽0 +𝛽1⁢𝑥. This is the core concept of regression models.
+
+𝑦∼𝐺⁡𝑎⁢𝑢⁢𝑠⁢𝑠⁢𝑖⁢𝑎⁢𝑛⁡(𝜇,𝜎)
+
+\[Distributionofy\]
+
+𝜇=𝛽0+𝛽1⁢𝑥
+
+\[Regressionequation\]
+
+where:
+
+- 𝛽0 is the mean 𝑦 when 𝑥 =0.
+
+- 𝛽1 is the change in mean 𝑦 for each unit increase of 𝑥.
+
+# Regression with brms
+
+Analysing vowel duration in italian from Coretta 2019 and how the speech rate affects vowel duration. Vowel duration doesn’t need introductions, and speech rate is simply the number of syllables per second, calculated from the frame sentence the vowel was uttered in. An expectation we might have is that vowels get shorter with increasing speech rate. You will notice how this is a very vague hypothesis: how shorter do they get? Is the shortening the same across all speech rates, or does it get weaker with higher speech rates? Our expectation/hypothesis simply states that vowels get shorter with increasing speech rate. Maybe we could do better and use what we know from speech production and come up with something more precise, but this type of vague hypothesis are very common, if not standard, in linguistic research, so we will stick to it for practical and pedagogical reasons. Remember, however, that sound research should strive for precision.
+
+Nonetheless, we will try to answer the following research question:
+
+> What is the relationship between vowel duration and speech rate?
+
+Let’s load the R data file `coretta2018a/ita_egg.rda`. It contains several phonetic measurements obtained from audio and electroglottographic recordings. You can find the information on the data in the related entry on the QM Data website: [Electroglottographic data on Italian](https://uoelel.github.io/qml-data/data/coretta2018a/ita_egg.html).
+
+```{r}
+load("data/coretta2018a/ita_egg.rda")
+
+ita_egg
+```
+
+Attatch tidyverse and set the theme to light:
+
+```{r}
+library(tidyverse)
+theme_set(theme_light())
+```
+
+Let’s plot vowel duration and speech rate in a scatter plot. The relevant columns in the tibble are `v1_duration` and `speech_rate`. The points in the plot are the individual observations (measurements) of vowels in the 19 speakers of Italian.
+
+```{r}
+ita_egg |> 
+  ggplot(aes(speech_rate, v1_duration)) +
+  geom_point(alpha = 0.5) +
+  labs(
+    x = "Speech rate (syllables per second)",
+    y = "Vowel duration (ms)"
+  )
+```
+
+You might be wondering what is the warning about missing values. This is because some observations of vowel duration (`v1_duration`) in the data are missing (i.e. they are `NA`, “Not Available”). We can drop them from the tibble using `drop_na()`. This function takes column names as arguments: each row that has `NA` in any of the columns listed in the function will be dropped, so be careful when using `drop_na()` without listing columns because any `NA` value in any column with make the row be removed.
+
+```{r}
+ita_egg_clean <- ita_egg |> 
+  drop_na(v1_duration)
+```
+
+To add a regression line, use `geom_smooth(method = "lm")`
+
+Under the hood, `geom_smooth()` fits a regression model to estimate the regression line and plots it. We will fit our own regression model below, so for now the regression line is just for show. [Figure 24.2](https://stefanocoretta.github.io/qdal/ch-regression.html#fig-vow-rate-lm) shows the scatter plot with the regression line. You can ignore the message about the formula.
+
+```{r}
+ita_egg_clean |> 
+  ggplot(aes(speech_rate, v1_duration)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm") +
+  labs(
+    x = "Speech rate (syllables per second)",
+    y = "Vowel duration (ms)"
+  )
+```
+
+By glancing at the individual points, we can see a negative relationship between speech rate and vowel duration: vowels get shorter with greater speech rate. This is reflected by the regression line too, which has a *negative* slope. A negative slope means that when the values on the *x*-axis increase, the values on the *y*-axis decrease. When the opposite is true, i.e. when with increasing *x*-axis values you observe increasing *y*-axis values, we say the regression line has *positive* slope. Positive and negative slope correspond to what some call a *direct* and *inverse* relationship. In terms of the equation of the line 𝑦 =𝛽0 +𝛽1⁢𝑥, a *positive slope* means 𝛽1 is a *positive* number and, conversely, a *negative slope* means 𝛽1 is a *negative* number. When 𝛽1 is zero, then the regression line is flat and we say that the two variables are independent: changing one, does not systematically change the other. You explored these features of the regression slope in [Chapter 23](https://stefanocoretta.github.io/qdal/ch-regression-intro.html), when playing around with the [Regression Models Illustrated](https://stefanocoretta.shinyapps.io/lines/) app and when answering the quiz.
+
+Let’s move on onto fitting a Gaussian regression model to vowel duration as the outcome variable and speech rate as the predictor. We are assuming that vowel duration follows a Gaussian distribution (although as mentioned at the beginning of this chapter, this is not the case, but it will do for now). Here is the model we will fit, in mathematical notation.
+
+𝑣⁢𝑑⁢𝑢⁢𝑟∼𝐺⁡𝑎⁢𝑢⁢𝑠⁢𝑠⁢𝑖⁢𝑎⁢𝑛⁡(𝜇,𝜎)𝜇=𝛽0+𝛽1⋅𝑠⁢𝑟
+
+You can read that as:
+
+- Vowel duration (𝑣⁢𝑑⁢𝑢⁢𝑟) is distributed (∼) according to a Gaussian distribution (𝐺⁡𝑎⁢𝑢⁢𝑠⁢𝑠⁢𝑖⁢𝑎⁢𝑛⁡(𝜇,𝜎)).
+
+- The mean 𝜇 is equal to the sum of 𝛽0 (the intercept) and the product of 𝛽1 and speech rate (𝛽1 ⋅𝑠⁢𝑟). The formula of 𝜇 is regression equation of the model.
+
+The regression model estimates the parameters in the mathematical formulae: the parameters to be estimated in regression models are usually represented with Greek letters (hence why we adopted this notation for the linear equation). The regression model in the formulae above has to estimate the following three parameters:
+
+- The *regression coefficients* 𝛽0 and 𝛽1.
+
+- The standard deviation of the Gaussian distribution, 𝜎.
+
+𝛽0 and 𝛽1 are called the **regression coefficients** because they are coefficients of the regression equation. In maths, a coefficient is simply a constant value that multiplies a **basis** in the equation, like the variable 𝑠⁢𝑟. In the regression equation of the model, 𝛽1 is a multiplier of the variable 𝑠⁢𝑟, but what about 𝛽0? Well, it is implied that 𝛽0 is a multiplier of the constant basis `1`, because 𝛽0 ⋅1 =𝛽0. Knowing this should now reveal the reason behind the strange formula that R uses in Gaussian models like the ones we fitted in [Chapter 22](https://stefanocoretta.github.io/qdal/ch-fit-model.html): the `1` in the formula stands for the constant basis of the intercept, meaning that the model estimates the coefficient of the intercept, 𝛽0. Gaussian models without predictors are in fact also called intercept-only regression models, because only an intercept is estimated. There is no slope in the model because there is not variable 𝑥 to multiply the slope with.
+
+Going back to our regression model of vowel duration and speech rate, we can rewrite the model formula to make the constant basis `1` explicit, thus:
+
+𝑣⁢𝑑⁢𝑢⁢𝑟∼𝐺⁡𝑎⁢𝑢⁢𝑠⁢𝑠⁢𝑖⁢𝑎⁢𝑛⁡(𝜇,𝜎)𝜇=𝛽0⋅1+𝛽1⋅𝑠⁢𝑟
+
+To instruct R to model vowel duration as a function of the numeric predictor speech rate you simply *add* it to the `1` we have used in the right-hand side of the tilde in [Chapter 22](https://stefanocoretta.github.io/qdal/ch-fit-model.html) (i.e. `v1_duration ~ 1`): so `v1_duration ~ 1 + speech_rate`. The R formula is based on the bases you multiply the coefficients with in the mathematical formula: 1 and 𝑠⁢𝑟. In regression parlance, the `1` and `sr` in the R formula are called predictors rather than bases. The predictor 𝑠⁢𝑟 can take different values and it is known as a **variable predictor**, the 1 is constant so it is called the **constant predictor**. The coefficient and the basis together are known as **predictor terms**. 𝛽0 ⋅1 is known as the **constant (predictor) term** or the **intercept term**, while 𝛽1 ⋅𝑠⁢𝑟 is a **variable (predictor) term**. In the R formula, you don’t explicitly include the coefficients 𝛽0 and 𝛽1, just the bases. Put all this together and you get the `1 + speech_rate` part of the formula. There is more: in R, since the 1 is a constant, you can omit it! So `v1_duration ~ 1 + speech_rate` can also be written as `v1_duration ~ speech_rate`. They are equivalent.
+
+That was probably a lot! But now that we have clarified how the R formula is set up, we can proceed and fit the model. Here is the full code to fit a Gaussian regression model of vowel duration with brms.
+
+```{r}
+library(brms)
+
+vow_bm <- brm(
+  # `1 +` can be omitted.
+  v1_duration ~ 1 + speech_rate,
+  # v1_duration ~ speech rate,
+  family = gaussian,
+  data = ita_egg_clean
+)
+```
+
+```{r}
+summary(vow_bm)
+```
+
+# Interpreting the model summary
+
+Let’s focus on the `Regression Coefficients` table of the summary. It should now be clear why in the summary of the model in [Chapter 22](https://stefanocoretta.github.io/qdal/ch-fit-model.html), the summaries for the mean 𝜇 (i.e. 𝛽0) were in the regression coefficients table. The table of the regression model we just fit has two coefficients. To understand what they are, just remember the equation of the line and the model formula above, repeated here.
+
+𝑣⁢𝑑⁢𝑢⁢𝑟∼𝐺⁡𝑎⁢𝑢⁢𝑠⁢𝑠⁢𝑖⁢𝑎⁢𝑛⁡(𝜇,𝜎)𝜇=𝛽0⋅1+𝛽1⋅𝑠⁢𝑟
+
+- `Intercept` is 𝛽0: this is the mean vowel duration, **when speech rate is 0**.
+
+- `speech_rate` is 𝛽1: this is the change in vowel duration **for each unit increase of speech rate**.
+
+This should make sense, if you understand the equation of a line: 𝑦 =𝛽0 +𝛽1⁢𝑥. Remember, the intercept 𝛽0 is the 𝑦 value when 𝑥 is 0. In our regression model, 𝑦 is vowel duration 𝑣⁢𝑑⁢𝑢⁢𝑟 and 𝑥 is speech rate 𝑠⁢𝑟. So the `Intercept` is the mean vowel duration when speech rate is 0. Recall that the `Estimate` and `Est.Error` column are simply the **mean and standard deviation of the posterior probability distributions** of the estimate of `Intercept` and `speech_rate` respectively. In this model we just have two coefficients instead of one. Looking at the 95% Credible Intervals (CrIs), we can say that based on the model and data:
+
+- The mean vowel duration, when speech rate is 0 syl/s, is between 192 and 205 ms, at 95% confidence.
+
+- We can be 95% confident that, for each unit increase of speech rate (i.e. for each increase of one syllable per second), the duration of the vowel decreases by 20.5-23 ms.
+
+To answer our research question (what is the relationship between vowel duration and speech rate?) we can say that with increasing speech rate, vowel duration decreases. We can be more precise than that and say that for each increase of one syllable per second, the vowel becomes 20.5 to 23 ms shorter, at 95% confidence (that is our 95% CrI). Since this is a regression model, it doesn’t matter if we are comparing 𝑣⁢𝑑⁢𝑢⁢𝑟 when 𝑠⁢𝑟 =0 vs when 𝑠⁢𝑟 =1, or when 𝑠⁢𝑟 =6.5 vs when 𝑠⁢𝑟 =7.5. The slope coefficient 𝛽1 tells us what to add to 𝑣⁢𝑑⁢𝑢⁢𝑟 when you increase 𝑠⁢𝑟 by one. For example, assume you want to obtain from the model an estimate of mean 𝑣⁢𝑑⁢𝑢⁢𝑟 when speech rate is 5. You would just plug in 𝑠⁢𝑟 =5 in the formula:
+
+𝜇=𝛽0+𝛽1⋅5
+
+So that is the intercept 𝛽0 plus 𝛽1 times the speech rate, i.e. 5. The only complication is that here 𝛽0 and 𝛽1 are full probability distributions, rather than single values like you would have in the simple case of the equation of a line. Since the coefficients are posterior probability distributions, any operation like addition and multiplication will lead to a posterior probability distribution, i.e. the posterior probability distribution of 𝜇. You will learn how do to these operations in the next chapter, [Chapter 25](https://stefanocoretta.github.io/qdal/ch-regression-draws.html).
+
+For now, let’s focus on the posterior distributions of the coefficients. To see what the posterior probability densities of 𝛽0, 𝛽1 and 𝜎 look like, you can quickly plot them with the `plot()` function, as we did in [Chapter 22](https://stefanocoretta.github.io/qdal/ch-fit-model.html). There is also another way: we can use the `mcmc_dens()` function from the [bayesplot](https://mc-stan.org/bayesplot/) package (why it’s `mcmc_dens()` will become clear in [Chapter 25](https://stefanocoretta.github.io/qdal/ch-regression-draws.html)). By default the function plots the posterior densities of all parameters in the model, plus other internal parameters that we usually don’t care about. We can conveniently specify which parameters to plot with the `pars` argument, which takes a character vector. The names of the parameters for the regression coefficients are slightly different than what you see in the summary: `b_Intercept` and `b_speech_rate`. These are just the names you see in the summary, with a prefixed `b_`. The `b_` stands for beta coefficient, which makes sense, since these are the 𝛽0 and 𝛽1 coefficients. [Figure 24.3](https://stefanocoretta.github.io/qdal/ch-regression.html#fig-vow-bm) shows the output of the `mcmc_dens()` function.
+
+```{r}
+#| label: bayesplot
+library(bayesplot)
+
+mcmc_dens(vow_bm, pars = c("b_Intercept", "b_speech_rate", "sigma"))
+```
+
+These are the results of the regression model: the full posterior probability distributions of the three parameters 𝛽0, 𝛽1, 𝜎. The posteriors can be described, as with any other probability distribution, by the values of their parameters. It is common to use the mean and standard deviation, the parameters of the Gaussian distribution. This is independent from the fact that we fitted a Gaussian distribution: posterior distributions tend to be bell-shaped, i.e. Gaussian. This is why the `Regression Coefficients` table of the summary reports mean and SD, i.e. `Estimate` and `Est.Err`, as mentioned earlier.
+
+You might we wondering where the the values in the model summary and the posterior distributions in the plots come from. To understand this we need to discuss the MCMC (Markov Chain Monte Carlo) draws. You have briefly encountered the MCMC draws the first time in [Chapter 22](https://stefanocoretta.github.io/qdal/ch-fit-model.html), when you fitted your first Gaussian model, and you have seen references to them in the text returned while fitting the regression model of this chapter. Any result from a Bayesian regression model (like the summary and the distribution plots) are the output of operations performed on the MCMC draws. The next chapter is a high-level introduction to the MCMC draws. It will cover just enough for you to understand how to work with them to interrogate the model (and to realise the summaries and plots are just summaries and plots of the draws).
+
+# Working with MCMC draws
+
+The bayesian model's aim to estimate the posterior probability distribution of all the model's parameters. In a simple regression we want to know which combinations of intercept 𝛽0, slope 𝛽1 and standard deviation 𝜎 values are most plausible given our prior beliefs and the observed data. If a model has many parameters we want to know which combinations fo values are plausible for all of them simultanously. This is called the **Joint Posterior Probability Distribution** of the parameters. In mathematical notation, the joint posterior probability distribution for a regression model is written as 𝑃⁡(𝛽0,𝛽1,𝜎 ∣𝑑), where 𝑑 is the observed data. This is a Bayesian posterior distribution 𝑃⁡(ℎ ∣𝑑) like the one we saw in [Chapter 20](https://stefanocoretta.github.io/qdal/ch-bayes.html) (here ℎ =(𝛽0,𝛽1,𝜎), but the principle is the same). The Greek letter 𝜃 (theta, \[ˈθiːtə\]) can be used to indicate any parameter (whether, an intercept, slope, mean, standard deviation, etc…) so we can generally define ℎ =(𝜃1,...,𝜃𝑘), where 𝑘 is the number of parameters. In the regression model we are discussion, 𝑘 =3, so (𝜃1,𝜃2,𝜃3) or using explicit notation (𝛽0,𝛽1,𝜎).
+
+```{r}
+vow_bm <- brm(
+  # `1 +` can be omitted.
+  v1_duration ~ speech_rate,
+  family = gaussian,
+  data = ita_egg_clean,
+  cores = 4,
+  seed = 20912,
+  file = "cache/vow_bm"
+)
+```

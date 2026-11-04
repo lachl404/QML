@@ -1,0 +1,101 @@
+---
+title: "Week 5 workshop"
+format: html
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(brms)
+basque_vot <- read_csv("./data/egurtzegi2020/eu_vot.csv")
+
+
+```
+
+```{r}
+basque_vot |>
+  filter( 
+    phone %in% c("ph", "kh", "th")) |>
+  summarise(
+    VOT_mean = round(mean(VOT)), VOT_sd = round(sd(VOT))
+  )
+
+
+
+
+```
+
+```{r}
+# fILTERED
+
+basque_vot |>
+  filter(
+    phone %in% c("ph", "kh", "th")
+  ) |>
+  summarise(
+    VOT_mean = mean(VOT),
+    VOT_sd = sd(VOT)
+  )
+  
+
+```
+
+```{r}
+library(dplyr)
+
+
+
+ aspirated <- basque_vot |>
+  filter( 
+    phone %in% c("th", "ph", "kh")
+  ) |>
+  summarise(
+    VOT_mean = mean(VOT, na.rm = TRUE),
+    VOT_sd = sd(VOT, na.rm = TRUE)
+  ) 
+ 
+ basque_vot |>
+   ggplot(aes(VOT)) +
+   geom_density() +
+   labs(x = "Time (seconds)") 
+
+
+#basque_vot |>
+  #mutate(
+  #  mean_ph = (mean(ph), na.rm = TRUE)
+   # mean_th = (mean(th), na.rm = TRUE)
+   # mean_kh = (mean(kh), na.rm = TRUE)
+   # sd_ph = (sd(ph), na.rm = TRUE)
+   # sd_th = (sd(th), na.rm = TRUE)
+   # sd_kh = (kh, na.rm = TRUE)
+ # )
+  
+```
+
+```{r}
+library(brms)
+
+pnorm(0.0325425, 0.01476197)
+
+```
+
+```{r}
+basque_vot |>
+  group_by(phone) |>
+  summarise(
+    mean = mean(VOT, na.rm = TRUE),
+    sd = sd(VOT, na.rm = TRUE),
+  )
+
+vot_aspirated <- basque_vot |>
+  filter(phone %in% c("th", "kh", "ph"))
+
+vot_aspirated |>
+  ggplot(
+    aes(x = VOT, colour = phone)) +
+  geom_density() +
+  labs(
+    x = "time",
+    y = "density"
+  )
+```

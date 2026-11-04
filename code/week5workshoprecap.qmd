@@ -1,0 +1,99 @@
+---
+title: "Week5WorkshopAGAIN"
+format: html
+---
+
+# Mixean Basque VOT
+
+Libraries
+
+```{r}
+library(tidyverse)
+library(brms)
+library(dplyr)
+library(ggplot2)
+```
+
+Summary measures
+
+```{r}
+eu_vot <- read_csv("./data/egurtzegi2020/eu_vot.csv")
+
+eu_vot |>
+  group_by(phone)|>
+  summarise(
+    mean = mean(VOT, na.rm = TRUE),
+    sd = sd(VOT, na.rm = TRUE)
+  )
+
+vot_aspirated <- eu_vot |>
+  filter(phone %in% c("th", "ph", "kh"))
+
+vot_aspirated |>
+  ggplot(
+    aes(x = VOT, colour = phone)) +
+  geom_density() +
+  labs(
+    x = "Time (Secs)", y = "Density"
+  )
+  
+
+```
+
+## Distribution
+
+```{r}
+
+vot_brm <- brm(
+  formula = VOT ~ 1,
+  family = gaussian,
+  data = vot_aspirated
+)
+  
+```
+
+summary
+
+```{r}
+summary(vot_brm)
+```
+
+*The mean is around 0.03 and peaks at its heighest density at around 0.0325*
+
+*IQR = 0.02*
+
+*and the quartiles are shown below as Q1: 0.02, Q2: 0.03, and Q3: 0.04.*
+
+## interpretation
+
+the Intercept ( $\mu$ or mean) is 0.03 meaning the estimated mean VOT is 0.03 seconds.
+
+sigma $\sigma$ is the sd which is estimated to be 0.01 (ie. the standard deviation of the VOT around the model's mean is 0.01 seconds.)
+
+```{r}
+qnorm(c(0.25, 0.5, 0.75), 0.03, 0.01) 
+
+```
+
+```{r}
+quartiles <- qnorm(
+  c(0.25, 0.5, 0.75), 0.03, 0.01)
+
+quartiles[3] - quartiles[1]
+```
+
+thus the IQR is 0.01349
+
+correction:
+
+the IQR should be calculated as not being rounded
+
+Decription:
+
+The Bayesian Gaussian model estimated a mean VOT of approximately 0.03 seconds and a standard deviation of 0.01 seconds. Based on this fitted Gaussian Distribution, the first quartile was approximately 0.0233 seconds, the median (Q2) was 0.03 (consistent with the mean VOT) and the third quartile (Q3) was 0.0367 seconds. The interquartile range (IQR) was approximately 0.0135 seconds indicating that the middle 50% of the fitted distribution of VOT lies between approximately 0.0233 and 0.0367 seconds.
+
+plot
+
+```{r}
+plot(vot_brm, combo = c("dens", "trace"))
+```
